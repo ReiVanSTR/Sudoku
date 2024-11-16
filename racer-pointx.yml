@@ -1,0 +1,80 @@
+required_resolution: [900, 1600, 320] #w,h,dpi
+screenshots_path: ./screenshots/
+work_dir: ./screenshots/
+steps:
+- step_name: start_messaging
+  screenshot_name: wellcome.png
+  required_screen_check: true # <bool>
+  type: button # <button | input_field>
+  workspace_area: [122, 1085, 473, 68] #x1, x2, y1, y2
+
+- step_name: input_phone_number
+  screenshot_name: input_phone_number.png
+  required_screen_check: false # <bool>
+  on_false: skip
+  type: input_field # <button | input_field>
+  select_placeholder: true # <bool>
+  workspace_area: [80, 200, 700, 775] #x1, x2, y1, y2
+
+- step_name: commit_phone_number
+  screenshot_name: "commit_phone_number.png"
+  required_screen_check: true # <bool>
+  type: button # <button | input_field>
+  workspace_area: [750, 840, 1025, 1065] #x1, x2, y1, y2
+
+- step_name: is_correct_phone_number
+  screenshot_name: "is_correct_phone_number.png"
+  required_screen_check: true # <bool>
+  type: button # <button | input_field>
+  workspace_area: [772, 778, 874, 876] #x1, x2, y1, y2
+
+- step_name: input_confirmation_code
+  screenshot_name: "input_confirmation_code.png"
+  on_false: skip # < skip | retry (default) > 
+  required_screen_check: true # <bool>
+  type: input_field # <button | input_field>
+
+
+- step_name: find_bot
+  screenshot_name: "find_bot_to_change.png"
+  required_screen_check: false # <bool>
+  type: input_field # <button | input_field>
+  select_placeholder: true # <bool>
+  workspace_area: [844, 846, 94, 96] #x1, x2, y1, y2
+
+- step_name: click_on_bot_chat
+  screenshot_name: "click_on_bot_chat.png"
+  required_screen_check: true # <bool>
+  threshold: 0.55 #default 0.75
+  type: button # <button | input_field>
+  workspace_area: [100, 490, 320, 400] #x1, x2, y1, y2
+
+- step_name: start_bot
+  screenshot_name: "start_bot.png"
+  required_screen_check: true # <bool>
+  threshold: 0.95 #default 0.75
+  on_false: skip # < skip | retry (default) > 
+  type: button # <button | input_field>
+  workspace_area: [30, 850, 1500, 1570] #x1, x2, y1, y2
+
+- step_name: launch_webapp
+  screenshot_name: "launch_webapp.png"
+  required_screen_check: true # <bool>
+  type: button # <button | input_field>
+  workspace_area: [40, 150, 1530, 1565] #x1, x2, y1, y2
+
+- step_name: commit_client_terms
+  screenshot_name: "commit_client_terms.png"
+  required_screen_check: true # <bool>
+  threshold: 0.75 #default 0.75
+  # on_false: skip # < skip | retry (default) > 
+  type: button # <button | input_field | validator>
+  workspace_area: [700, 750, 935, 940] #x1, x2, y1, y2
+
+
+
+game_steps:
+  - step_name: validate_game_opened
+    screenshot_name: "validate_game_opened.png"
+    required_screen_check: true # <bool>
+    type: validator
