@@ -11,7 +11,7 @@ class ScreenGetterStep(Step, ScreenshotProcessor):
     #     self.bitwise_screenshot = self.screenshot_to_bitwise(template_path = f"{work_dir}/{self.screenshot_name}")
     #     if self.validate_workspace_area():
     #         self.bitwise_screenshot = self.bitwise_crop(self.bitwise_screenshot, self.workspace_area)
-
+ 
 
     def __call__(self):
         pass
