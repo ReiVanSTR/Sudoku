@@ -136,13 +136,21 @@ class AsyncAccount:
             "Authorization": f"Bearer {config.tron.api_key}",
         }
         self.url = f"https://api.tronscan.org/api/account?address={self.address}"
+        self.is_reconnection = False
 
     async def get_balance(self, max_attempts: int = 3, delay: float = 30.0) -> float:
         for attempt in range(max_attempts):
             try:
+                if self.is_reconnection:
+                    logger.info(f"Trying to reconnect ...")
+
                 async with aiohttp.ClientSession() as session:
                     async with session.get(self.url, headers=self.headers) as response:
                         if response.status == 200:
+                            if self.is_reconnection:
+                                self.is_reconnection = False
+                                logger.info(f"Connection established!")
+
                             data = await response.json()
                             balance = data.get("balance", 0) / 1_000_000  # Конвертация Sun -> TRX
                             return balance
@@ -156,11 +164,11 @@ class AsyncAccount:
                             response.raise_for_status()
 
             except aiohttp.ClientError as e:
-                logger.error(f"Request failed: {e}. Attempt {attempt + 1}/{max_attempts}. Retrying in {delay} seconds...")
+                logger.error(f"Request failed: {e}. Attempt {attempt + 1}/{max_attempts}. Retrying in {delay*1.5*(attempt)} seconds...")
+                self.is_reconnection = True
 
             if attempt < max_attempts - 1:
                 await asyncio.sleep(delay*1.5*(attempt))
-                logger.info(f"Try to reconnect ...")
 
         raise aiohttp.ClientError(f"Failed to fetch balance after {max_attempts} attempts")
 
