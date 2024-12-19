@@ -164,11 +164,11 @@ class AsyncAccount:
                             response.raise_for_status()
 
             except aiohttp.ClientError as e:
-                logger.error(f"Request failed: {e}. Attempt {attempt + 1}/{max_attempts}. Retrying in {delay*1.5*(attempt)} seconds...")
+                logger.error(f"Request failed: {e}. Attempt {attempt + 1}/{max_attempts}. Retrying in {delay*1.5*(attempt + 1)} seconds...")
                 self.is_reconnection = True
 
             if attempt < max_attempts - 1:
-                await asyncio.sleep(delay*1.5*(attempt))
+                await asyncio.sleep(delay*1.5*(attempt + 1))
 
         raise aiohttp.ClientError(f"Failed to fetch balance after {max_attempts} attempts")
 
