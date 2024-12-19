@@ -159,7 +159,8 @@ class AsyncAccount:
                 logger.error(f"Request failed: {e}. Attempt {attempt + 1}/{max_attempts}. Retrying in {delay} seconds...")
 
             if attempt < max_attempts - 1:
-                await asyncio.sleep(delay)
+                await asyncio.sleep(delay*1.5*(attempt))
+                logger.info(f"Try to reconnect ...")
 
         raise aiohttp.ClientError(f"Failed to fetch balance after {max_attempts} attempts")
 
