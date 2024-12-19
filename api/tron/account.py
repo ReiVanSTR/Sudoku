@@ -42,7 +42,7 @@ class Account:
         }
         self.url = f"https://api.tronscan.org/api/account?address={self.address}"
 
-    def get_balance(self, max_attempts: int = 3, delay: float = 30.0):
+    def get_balance(self, max_attempts: int = 3, delay: float = 5.0):
 
         for attempt in range(max_attempts):
             try:
