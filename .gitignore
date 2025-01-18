@@ -167,6 +167,4 @@ cython_debug/
 
 *.pem
 *.ipynb
-.mnemo/anal
-.mnemo/frozen_500
-.mnemo/trx_wallet
+.mnemo/*
