@@ -25,6 +25,8 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+./mnemo/*
+*.pem
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
@@ -165,3 +167,6 @@ cython_debug/
 
 *.pem
 *.ipynb
+.mnemo/anal
+.mnemo/frozen_500
+.mnemo/trx_wallet
