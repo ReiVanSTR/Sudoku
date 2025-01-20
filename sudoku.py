@@ -1,11 +1,16 @@
 from api.tron.account import AsyncAccount
 import asyncio
+from telegram_bot.bot import main as bot
+from logger import broadcaster
 
-
-mnemonic = input("Mnemo: ")
 async def main():
 
-    acc = AsyncAccount(mnemonic)
-    await acc.run_monitoring(threshold = 12, recipient_address = "TPXauFLfM89qAosiagcGT6WiYtGc8zqdQY")
-
-asyncio.run(main())
+    acc = AsyncAccount(".mnemo/anal")
+    try:
+        await asyncio.gather(acc.run_monitoring(threshold = 0.5, recipient_address = "TSfQfJx6bAyCSYELfHcgvDQGQJPC7Nrv7z", min_amount = 5, spread = 1), bot())
+    except (KeyboardInterrupt, SystemExit):
+        broadcaster("Bot stopped")
+    
+    
+if __name__ == "__main__":
+    asyncio.run(main())
