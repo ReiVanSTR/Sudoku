@@ -10,7 +10,8 @@ from watchdog.events import FileSystemEventHandler
 
 
 from config import Config, TelegramBotsConfig
-from logger import setup_logging, tga_logger, broadcaster
+from logger import setup_logging, broadcaster
+from .tgbot.middlewares import UserMiddleware
 
 from .tgbot.handlers import routers_list
 
@@ -31,7 +32,7 @@ def register_global_middlewares(dp: Dispatcher, config: TelegramBotsConfig, sess
     """
     middleware_types = [
         # ConfigMiddleware(config),
-        # UserMiddleware(),
+        UserMiddleware(config),
         # PermissionsMiddleware(),
         # SessionMiddleware()
     ]
@@ -63,7 +64,7 @@ async def main():
     tz = timezone("Europe/Warsaw")
     await broadcaster(f"Started polling for bot {await bot.get_my_name()}")
     
-    await dp.start_polling(bot, time = tz, tga_logger = tga_logger)
+    await dp.start_polling(bot, time = tz, broadcaster = broadcaster, default_recipient = config.default_recipient)
 
 def restart_bot():
     logging.info("Перезапуск бота...")

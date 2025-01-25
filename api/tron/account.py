@@ -201,7 +201,7 @@ class AsyncAccount:
         bandwidth_price = await self.get_bandwidth_price()
         txsize = get_tx_size({"raw_data": transaction._raw_data, "signature": transaction._signature})
         resourse = await self.tron.get_account_resource(self.address)
-        available_brandwidth = resourse.get("freeNetLimit") - resourse.get("freeNetUsed")
+        available_brandwidth = resourse.get("freeNetLimit") - resourse.get("freeNetUsed", 0)
         
         if available_brandwidth > txsize:
             return 0

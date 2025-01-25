@@ -1,7 +1,9 @@
 from .user import user_router
+from .runner import runner_router
 
 routers_list = [
-    user_router
+    user_router,
+    runner_router
 ]
 
 __all__ = [
