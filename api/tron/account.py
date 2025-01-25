@@ -16,7 +16,7 @@ from .memonic import generate_tron_private_key
 from .proxymity_provider import ProxymityProvider
 from .async_proxymity_provider import AsyncProxymityProvider
 
-from logger import setup_logging, tga_logger, broadcaster
+from logger import setup_logging, tga_logger, broadcaster, file_logger
 
 config = Config.load_config()
 setup_logging(loggig_level = logging.WARNING)
@@ -229,16 +229,19 @@ class AsyncAccount:
                     await self.broadcast_transaction(recipient_address, balance)
                     await broadcaster(f"Successfull transfer {balance}")
                     logging.info(f"[INFO] Successfull transfer {balance}")
+                    file_logger(f"Successfull transfer {balance}. From: {self.address} - To: {recipient_address}")
                 if current_time + datetime.timedelta(seconds = 3) < datetime.datetime.now():
                     await broadcaster(f"[WARNING] Too long request!")
                     logging.warning("Too long request!")               
          
             except ReadTimeoutError as e:
                 await broadcaster(f"[WARNING] Time out error \{e}")
+                file_logger(f"[WARNING] Time out error \{e}")
                 logging.warning(f"Time out error {e}")
 
             except Exception as e:
                 await broadcaster(f"[ERROR] Time out error \n{e.__str__()}")
+                file_logger(f"[ERROR] Time out error \n{e.__str__()}")
                 logging.warning(e)
 
             await asyncio.sleep(threshold)
