@@ -235,8 +235,8 @@ class AsyncAccount:
                     logging.warning("Too long request!")               
          
             except ReadTimeoutError as e:
-                await broadcaster(f"[WARNING] Time out error \{e}")
-                file_logger(f"[WARNING] Time out error \{e}")
+                await broadcaster(f"[WARNING] Time out error {e}")
+                file_logger(f"[WARNING] Time out error {e}")
                 logging.warning(f"Time out error {e}")
 
             except Exception as e:
