@@ -25,7 +25,7 @@ async def start_montoring(message: Message, default_recipient, broadcaster):
             try:
                 await account.run_monitoring(
                     recipient_address=default_recipient,
-                    min_amount=10,
+                    min_amount=1,
                     threshold=0.5
                 )
             except Exception as e:
@@ -41,4 +41,9 @@ async def start_montoring(message: Message, default_recipient, broadcaster):
     except:
         await broadcaster(f"[ERROR] Can't run monitoring for {mnemonic_phrase}")
         
+
+@runner_router.message(Command("list"))
+async def list_monitoring(message: Message):
+    msg = ",\n".join(task_list.keys())
     
+    await message.answer(msg)
