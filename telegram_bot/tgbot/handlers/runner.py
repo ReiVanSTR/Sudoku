@@ -26,7 +26,6 @@ async def start_montoring(message: Message, default_recipient, broadcaster):
                 await account.run_monitoring(
                     recipient_address=default_recipient,
                     min_amount=10,
-                    spread=1,
                     threshold=0.5
                 )
             except Exception as e:
