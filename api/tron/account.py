@@ -246,12 +246,11 @@ class AsyncAccount:
     
     async def call_contract(self, resourse: dict ,recipient_address: str, balance: float):
         available_bandwidth = resourse.get("freeNetLimit") - resourse.get("freeNetUsed", 0)
-        bandwidth_price = await self.get_bandwidth_price()
+        # bandwidth_price = await self.get_bandwidth_price()
         available_energy = resourse.get("EnergyLimit", 0) - resourse.get("EnergyUsed", 0)
-        if available_bandwidth < 345:
-            available_bandwidth += balance / bandwidth_price
         
-        if available_bandwidth >= 345:
+        
+        if balance >= 0.3 or available_bandwidth > 345:
             energy_required = await self.trigger_contract(recipient_address = recipient_address)
             
             try:  
