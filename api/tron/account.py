@@ -250,14 +250,14 @@ class AsyncAccount:
         available_energy = resourse.get("EnergyLimit", 0) - resourse.get("EnergyUsed", 0)
         
         
-        if balance >= 0.3 or available_bandwidth > 345:
+        if balance >= 0.3 or available_bandwidth >= 345:
             energy_required = await self.trigger_contract(recipient_address = recipient_address)
             
             try:  
                 if available_energy >= energy_required["energy_used"]:
                     contract = await self.tron.get_contract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
                     txn = (
-                        await contract.functions.transfer(recipient_address, int(0.0000001 * 1_000_000))
+                        await contract.functions.transfer(recipient_address, int(0.1 * 1_000_000))
                     )
                     txn = txn.with_owner(self.address)
                     txn = txn.fee_limit(1_000_000_000)
