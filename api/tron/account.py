@@ -252,21 +252,20 @@ class AsyncAccount:
             available_bandwidth += balance / bandwidth_price
         
         if available_bandwidth >= 345:
-            try:
-                energy_required = await self.trigger_contract(recipient_address = recipient_address)
-                
+            energy_required = await self.trigger_contract(recipient_address = recipient_address)
+            
+            try:  
                 if available_energy >= energy_required["energy_used"]:
                     contract = await self.tron.get_contract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
-
-                txn = (
-                    await contract.functions.transfer(recipient_address, int(0.0000001 * 1_000_000))
-                )
-                txn = txn.with_owner(self.address)
-                txn = txn.fee_limit(1_000_000_000)
-                txn = await txn.build()
-                txn.sign(self.private_key)
-                await txn.broadcast()      
-                await broadcaster(f"[INFO] Sended TRC20 transfer for break energy. Account: {self.address}")
+                    txn = (
+                        await contract.functions.transfer(recipient_address, int(0.0000001 * 1_000_000))
+                    )
+                    txn = txn.with_owner(self.address)
+                    txn = txn.fee_limit(1_000_000_000)
+                    txn = await txn.build()
+                    txn.sign(self.private_key)
+                    await txn.broadcast()      
+                    await broadcaster(f"[INFO] Sended TRC20 transfer for break energy. Account: {self.address}")
             except Exception as e:
                 await broadcaster(f"[ERROR] Can't send TRC20. Account: {self.address}")
                 
