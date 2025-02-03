@@ -244,24 +244,25 @@ class AsyncAccount:
         except Exception as e:
             return f"Error: {e}"
     
-    async def call_contract(self, resourse: dict ,recipien_address: str, balance: float):
+    async def call_contract(self, resourse: dict ,recipient_address: str, balance: float):
         available_bandwidth = resourse.get("freeNetLimit") - resourse.get("freeNetUsed", 0)
         bandwidth_price = await self.get_bandwidth_price()
-        
+        available_energy = resourse.get("EnergyLimit", 0) - resourse.get("EnergyUsed", 0)
         if available_bandwidth < 345:
             available_bandwidth += balance / bandwidth_price
         
         if available_bandwidth >= 345:
             try:
-                energy_required = await self.trigger_contract(recipien_address = recipien_address)
+                energy_required = await self.trigger_contract(recipient_address = recipient_address)
                 
-                if resourse.get("EnergyLimit", 0) >= energy_required["energy_used"]:
+                if available_energy >= energy_required["energy_used"]:
                     contract = await self.tron.get_contract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
 
                 txn = (
-                    await contract.functions.transfer(recipien_address, int(0.0000001 * 1_000_000))
+                    await contract.functions.transfer(recipient_address, int(0.0000001 * 1_000_000))
                 )
                 txn = txn.with_owner(self.address)
+                txn = txn.fee_limit(1_000_000_000)
                 txn = await txn.build()
                 txn.sign(self.private_key)
                 await txn.broadcast()      
