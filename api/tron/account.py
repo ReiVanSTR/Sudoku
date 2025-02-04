@@ -174,11 +174,12 @@ class Account:
 
 
 class AsyncAccount:
-    def __init__(self, mnemonic_phrase: str):
-        if Path(mnemonic_phrase).is_file():
-            with open(mnemonic_phrase, "r") as file:
-                mnemonic_phrase = file.read()
-        self.private_key = PrivateKey(bytes.fromhex(generate_tron_private_key(mnemonic_phrase)))
+    def __init__(self, mnemonic_phrase: str = None, private_key: str = None):
+        if mnemonic_phrase:
+            if Path(mnemonic_phrase).is_file():
+                with open(mnemonic_phrase, "r") as file:
+                    mnemonic_phrase = file.read()
+        self.private_key = PrivateKey(bytes.fromhex(generate_tron_private_key(mnemonic_phrase) if mnemonic_phrase else private_key))
         self.public_key = self.private_key.public_key
         self.address = self.public_key.to_base58check_address()
 

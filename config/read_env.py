@@ -4,6 +4,7 @@ from environs import Env
 
 from .tron import TronConfig
 from .telegram_bots import TelegramBotsConfig
+from .redis_db import RedisConfig
 
 
 @dataclass
@@ -14,6 +15,7 @@ class Config:
 
     tron: Optional[TronConfig]
     telegram_bots: Optional[TelegramBotsConfig]
+    redis: Optional[RedisConfig]
 
     @staticmethod
     def load_config(env_path: str = ".env"):
@@ -32,5 +34,6 @@ class Config:
         
         return Config(
             tron = TronConfig.from_env(env),
-            telegram_bots = TelegramBotsConfig.from_env(env)
+            telegram_bots = TelegramBotsConfig.from_env(env),
+            redis = RedisConfig.from_env(env)
         )

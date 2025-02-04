@@ -14,9 +14,13 @@ from logger import setup_logging, broadcaster
 from .tgbot.middlewares import UserMiddleware
 
 from .tgbot.handlers import routers_list
-
+from .tgbot.services.redis_db import RedisDB
+from .tgbot.services.monitor_manager import MonitorsManager
 
 config = Config.load_config().telegram_bots
+redis_config = Config.load_config().redis
+
+redis_db = RedisDB(redis_config)
 setup_logging(loggig_level=logging.WARNING)
 
 def register_global_middlewares(dp: Dispatcher, config: TelegramBotsConfig, session_pool=None):
@@ -32,7 +36,7 @@ def register_global_middlewares(dp: Dispatcher, config: TelegramBotsConfig, sess
     """
     middleware_types = [
         # ConfigMiddleware(config),
-        UserMiddleware(config),
+        UserMiddleware(config, redis_db),
         # PermissionsMiddleware(),
         # SessionMiddleware()
     ]
@@ -64,7 +68,7 @@ async def main():
     tz = timezone("Europe/Warsaw")
     await broadcaster(f"Started polling for bot {await bot.get_my_name()}")
     
-    await dp.start_polling(bot, time = tz, broadcaster = broadcaster, default_recipient = config.default_recipient)
+    await dp.start_polling(bot, time = tz, broadcaster = broadcaster, default_recipient = config.default_recipient, redis_db = redis_db, manager = MonitorsManager())
 
 def restart_bot():
     logging.info("Перезапуск бота...")
