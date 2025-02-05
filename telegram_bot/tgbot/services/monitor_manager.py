@@ -3,6 +3,12 @@ from .redis_db import MonitorData
 from api.tron.account import AsyncAccount
 from tronpy.keys import PrivateKey
 from logger.tgbot_announcement import tga_logger, broadcaster
+from .redis_db import RedisDB
+
+from config import Config
+redis_config = Config.load_config().redis
+
+redis_db = RedisDB(redis_config)
 
 class MonitorsManager:
     def __init__(self):
@@ -19,11 +25,7 @@ class MonitorsManager:
             
             async def monitor_wrapper():
                 try:
-                    await account.run_monitoring(
-                        recipient_address=monitor.recipient_address,
-                        min_amount=monitor.min_amount,
-                        threshold=monitor.threshold
-                    )
+                    await account.run_monitoring(monitor)
                 except Exception as e:
                     await self.tga_logger(monitor.created_by, f"[MonitorManager] Monitoring failed for {account.address}: {str(e)}")
 
