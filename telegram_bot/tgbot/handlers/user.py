@@ -7,6 +7,7 @@ from aiogram.types import Message, CallbackQuery
 from aiogram.fsm.context import FSMContext
 
 from api.tron.memonic import generate_tron_private_key
+from tronpy.keys import PrivateKey
 
 from ..keyboards.menu import MenuKeyboards
 from ..keyboards.callbacks import MenuNavigate, MenuActons
@@ -30,6 +31,49 @@ async def announce(message: Message, broadcaster):
 async def menu(message: Message, broadcaster, state: FSMContext):
     await state.set_state(MenuStates._main)
     await message.answer(f"Menu", reply_markup = await MenuKeyboards.menu_keyboard(message.from_user.id))
+    
+    
+@user_router.callback_query(StateFilter(MenuStates._main), MenuNavigate.filter(F.action == MenuActons.MY_MONITORINGS.value))
+async def show_monitorings(query: CallbackQuery, state: FSMContext, redis_db: RedisDB):
+    await query.answer()
+    await state.set_state(MenuStates.show_monitoring)
+    await MenuKeyboards.show_montorings(query.from_user.id, query)
+
+
+@user_router.callback_query(StateFilter(MenuStates.show_monitoring), MenuNavigate.filter(F.action == MenuActons.MANAGE_MONITOR.value))
+async def manage_monitoring(query: CallbackQuery, state: FSMContext, redis_db: RedisDB, manager: MonitorsManager, callback_data: MenuNavigate):    
+    activity_type = callback_data.type
+    monitor = await redis_db.get_monitor(query.from_user.id, callback_data.id) # monitor name
+    
+    if activity_type == "stop":
+        await manager.stop_monitor(monitor, query.from_user.id)
+        await redis_db.update_monitor_status(query.from_user.id, monitor, False)
+        await MenuKeyboards.show_monitor(query.from_user.id, monitor.name, query)
+        
+    if activity_type == "start":
+        await manager.create_monitor(monitor = monitor)
+        await redis_db.update_monitor_status(query.from_user.id, monitor, True)
+        await MenuKeyboards.show_monitor(query.from_user.id, monitor.name, query)
+        
+    if activity_type == "remove":
+        try:
+            await manager.stop_monitor(monitor, query.from_user.id)
+            await redis_db.remove_monitor(query.from_user.id, monitor.name)
+            await query.message.delete()
+            await MenuKeyboards.show_montorings(query.from_user.id, query)
+        except:
+            await query.answer(text = "Error", show_alert = True)
+            
+    if activity_type == "edit":
+        if monitor.is_running:
+            await query.answer(text = "Monitor must be stopped!", show_alert = True)
+            return
+        
+        return await query.answer(text = "Будет время допишу", show_alert = True)
+        
+    await query.answer()
+            
+        
     
 @user_router.callback_query(StateFilter(MenuStates._main), MenuNavigate.filter(F.action == MenuActons.NEW_MONITORING.value))
 async def new_monitorig(query: CallbackQuery, state: FSMContext, redis_db: RedisDB, default_recipient):
@@ -155,7 +199,6 @@ async def running_control(query: CallbackQuery, state: FSMContext, callback_data
             )
         try:
             await manager.create_monitor(
-                private_key = data.get("mnemonic"),
                 monitor = monitor
             )
             await redis_db.append_monitor(query.from_user.id, monitor)
@@ -212,3 +255,8 @@ async def back(query: CallbackQuery, state: FSMContext):
     await query.answer()
     await state.set_state(MenuStates._main)
     await query.message.answer(f"Menu", reply_markup = await MenuKeyboards.menu_keyboard(query.from_user.id))
+    
+@user_router.message(StateFilter(MenuStates), Command("back"))
+async def back(message: Message, state: FSMContext):
+    await state.set_state(MenuStates._main)
+    await message.answer(f"Menu", reply_markup = await MenuKeyboards.menu_keyboard(message.from_user.id))

@@ -1,8 +1,9 @@
 import logging
 from aiogram.utils.keyboard import InlineKeyboardBuilder
-from ..services.redis_db import RedisDB, UserData
+from api.tron.account import AsyncAccount
 from config import Config
 
+from ..services.redis_db import RedisDB, MonitorData
 from .callbacks import MenuNavigate, MenuActons
 
 redis_config = Config.load_config().redis
@@ -16,7 +17,7 @@ class MenuKeyboards:
 
         
         monitors_button = InlineKeyboardBuilder().button(
-            text = f"Runned monitorings: {len(await redis_db.get_all_monitors(user_id))}",
+            text = f"Runned monitorings: {len(await redis_db.get_active_monitors(user_id))}",
             callback_data = MenuNavigate(action = MenuActons.IGNORE)
         )
         monitors_button.adjust(1)
@@ -28,6 +29,13 @@ class MenuKeyboards:
         )
         run_monitoring.adjust(1)
         keybord.attach(run_monitoring)
+        
+        show_monitorings = InlineKeyboardBuilder().button(
+            text = f"My monitorings",
+            callback_data = MenuNavigate(action = MenuActons.MY_MONITORINGS.value)
+        )
+        show_monitorings.adjust(1)
+        keybord.attach(show_monitorings)
         
         return keybord.as_markup()
     
@@ -96,3 +104,89 @@ class MenuKeyboards:
         keybord.attach(back)
         
         return keybord.as_markup()
+    
+    @staticmethod
+    async def show_montorings(user_id, query):
+        monitorings = await redis_db.get_all_monitors(user_id)
+        
+        if not monitorings:
+            back = InlineKeyboardBuilder().button(
+            text = f"<<Back<<",
+            callback_data = MenuNavigate(action = MenuActons.BACK)
+            )
+            back.adjust(1)
+            
+            query.message.answer(text = "No montorings", reply_markup = back.as_markup())
+        
+        for monitor in monitorings:
+            keyboard = InlineKeyboardBuilder()
+            account = AsyncAccount(private_key = monitor.private_key)
+            
+            trx_balance = float(await account.tron.get_account_balance(account.address))
+            usdt_trc20_balance = await account.get_trc20_balance(account.address)
+            account_resources = await account.tron.get_account_resource(account.address)
+            current_transactions = await account.fetch_tron_transactions(account.address)
+            
+            message = f"""
+            Monitor: {monitor.name} | Address: {account.address[:8]}\n
+            TRX: {trx_balance} | USDt-TRC20: {usdt_trc20_balance}$\n
+            Brandwidth: {account_resources.get("freeNetLimit", 0) - account_resources.get("freeNetUsed", 0)} | Energy: {account_resources.get("EnergyLimit", 0) - account_resources.get("EnergyUsed", 0)}\n
+            Current transacions: {current_transactions}\n
+            Is running: {monitor.is_running}
+            """
+            keyboard.button(
+                text = f"{'Start' if not monitor.is_running else 'Stop'}",
+                callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "start" if not monitor.is_running else "stop", id = monitor.name)
+            )
+            
+            keyboard.button(
+                text = f"Remove",
+                callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "remove", id = monitor.name)
+            )
+            
+            keyboard.button(
+                text = f"Edit",
+                callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "edit", id = monitor.name)
+            )
+            
+            keyboard.adjust(3)
+            
+            await query.message.answer(text = message, reply_markup = keyboard.as_markup())
+            
+    @staticmethod
+    async def show_monitor(user_id, monitor_name, query):
+        monitor = await redis_db.get_monitor(user_id, monitor_name)
+        
+        keyboard = InlineKeyboardBuilder()
+        account = AsyncAccount(private_key = monitor.private_key)
+        
+        trx_balance = float(await account.tron.get_account_balance(account.address))
+        usdt_trc20_balance = await account.get_trc20_balance(account.address)
+        account_resources = await account.tron.get_account_resource(account.address)
+        current_transactions = await account.fetch_tron_transactions(account.address)
+        
+        message = f"""
+        Monitor: {monitor.name} | Address: {account.address[:8]}\n
+        TRX: {trx_balance} | USDt-TRC20: {usdt_trc20_balance}$\n
+        Brandwidth: {account_resources.get("freeNetLimit", 0) - account_resources.get("freeNetUsed", 0)} | Energy: {account_resources.get("EnergyLimit", 0) - account_resources.get("EnergyUsed", 0)}\n
+        Current transacions: {current_transactions}\n
+        Is running: {monitor.is_running}
+        """
+        keyboard.button(
+            text = f"{'Start' if not monitor.is_running else 'Stop'}",
+            callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "start" if not monitor.is_running else "stop", id = monitor.name)
+        )
+        
+        keyboard.button(
+            text = f"Remove",
+            callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "remove", id = monitor.name)
+        )
+        
+        keyboard.button(
+            text = f"Edit",
+            callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "edit", id = monitor.name)
+        )
+        
+        keyboard.adjust(3)
+        
+        await query.message.edit_text(text = message, reply_markup = keyboard.as_markup())

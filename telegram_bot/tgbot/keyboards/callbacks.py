@@ -11,7 +11,9 @@ class MenuActons(Enum):
     BACK = "BACK"
     
     CREATE_MONITORING = "CREATE_MONITORING"
+    MANAGE_MONITOR = "MANAGE_MONITOR"
 
 class MenuNavigate(CallbackData, prefix = "menu"):
     action: str
     type: Optional[str] = Field(default="")
+    id: Optional[str] = Field(default="")

@@ -18,7 +18,7 @@ class UserMiddleware(BaseMiddleware):
         event: Message,
         data: Dict[str, Any],
     ) -> Any:
-        if not event.from_user.id in self.config.admins:
+        if not event.from_user.id in await self.redis_db.get_authorized_users():
             await event.answer(text = f"You have not permited!", show_alert = True)
             return
         

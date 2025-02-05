@@ -1,6 +1,7 @@
 import asyncio
 from .redis_db import MonitorData
 from api.tron.account import AsyncAccount
+from tronpy.keys import PrivateKey
 from logger.tgbot_announcement import tga_logger, broadcaster
 
 class MonitorsManager:
@@ -9,9 +10,9 @@ class MonitorsManager:
         self.broadcaster = broadcaster
         self.tga_logger = tga_logger
     
-    async def create_monitor(self, private_key: str, monitor: MonitorData):
+    async def create_monitor(self, monitor: MonitorData):
         try:
-            account = AsyncAccount(private_key = private_key)
+            account = AsyncAccount(private_key = monitor.private_key)
             
             if account.address in self.tasks and not self.tasks[account.address].done():
                 return (False, f"Monitoring for {account.address} already running!")
@@ -34,3 +35,13 @@ class MonitorsManager:
             await self.tga_logger(monitor.created_by,f"[INFO] Started monitoring for {account.address}")
         except Exception as e:
             await self.tga_logger(monitor.created_by,f"[ERROR] Can't run monitoring for {account.address} \n Error:{e}")
+            
+    async def stop_monitor(self, monitor, user_id):
+        address = PrivateKey(bytes.fromhex(monitor.private_key)).public_key.to_base58check_address()
+        
+        if address not in self.tasks or self.tasks[address].done():
+            await self.tga_logger(user_id, f"[MonitorManager] Monitoring not started or already done.")
+            return
+        
+        self.tasks[address].cancel()
+        await self.tga_logger(user_id, f"[MonitorManager] Monitoring stoppped for {address}")

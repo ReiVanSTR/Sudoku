@@ -67,8 +67,13 @@ async def main():
     register_global_middlewares(dp, config)
     tz = timezone("Europe/Warsaw")
     await broadcaster(f"Started polling for bot {await bot.get_my_name()}")
+    monitors = await redis_db.get_runned_monitors()
+    manager = MonitorsManager()
     
-    await dp.start_polling(bot, time = tz, broadcaster = broadcaster, default_recipient = config.default_recipient, redis_db = redis_db, manager = MonitorsManager())
+    for monitor in monitors:
+        await manager.create_monitor(monitor)
+    
+    await dp.start_polling(bot, time = tz, broadcaster = broadcaster, default_recipient = config.default_recipient, redis_db = redis_db, manager = manager)
 
 def restart_bot():
     logging.info("Перезапуск бота...")

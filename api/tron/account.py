@@ -9,13 +9,14 @@ import asyncio
 from tronpy import AsyncTron, Tron
 from tronpy.abi import tron_abi
 from tronpy.keys import PrivateKey
-from dataclasses import dataclass
+import aiohttp
 from trontxsize import get_tx_size
 
 from config import Config
 from .memonic import generate_tron_private_key
 from .proxymity_provider import ProxymityProvider
 from .async_proxymity_provider import AsyncProxymityProvider
+from telegram_bot.tgbot.services.redis_db import MonitorData
 
 from logger import setup_logging, tga_logger, broadcaster, file_logger
 
@@ -198,6 +199,14 @@ class AsyncAccount:
         except Exception as e:
             await broadcaster(f"[WARNING] Can't request current branwdth price. \n{e.__str__() if not type(e) == str else e}")      
             logging.warning(f"Can't request current branwdth price. {e}")
+            
+    async def get_trc20_balance(self, address: str):
+        contr = await self.tron.get_contract("TR7NHqjeKQxGTCi8q8ZY4pL8otSzgjLj6t")
+        
+        try:
+            return await contr.functions.balanceOf(address) / 1_000_000
+        except:
+            return 0
         
     async def calculate_transaction_fee(self, transaction):
         bandwidth_price = await self.get_bandwidth_price()
@@ -271,7 +280,7 @@ class AsyncAccount:
                 
     
     
-    async def run_monitoring(self, recipient_address: str, min_amount: int, threshold: int = 1):
+    async def run_monitoring(self, monitor: MonitorData):
         while True:
             current_time = None
             try:
@@ -280,29 +289,81 @@ class AsyncAccount:
                 resourse = await self.tron.get_account_resource(self.address)
                 
                 if resourse.get("EnergyLimit", 0) > 1:
-                    await self.call_contract(resourse, recipient_address, balance)
+                    await self.call_contract(resourse, monitor.recipient_address, balance)
                 
-                if balance > min_amount:
-                    await self.broadcast_transaction(recipient_address, balance)
-                    await broadcaster(f"Successfull transfer {balance}")
-                    logging.info(f"[INFO] Successfull transfer {balance}")
-                    file_logger(f"Successfull transfer {balance}. From: {self.address} - To: {recipient_address}")
+                if balance > monitor.min_amount:
+                    await self.broadcast_transaction(monitor.recipient_address, balance)
+                    await tga_logger(monitor.created_by, f"Successfull transfer {balance} | {monitor.name}")
+                    await broadcaster(f"Successfull transfer {balance} | User: {monitor.created_by} | {monitor.name}")
+                    file_logger(f"Successfull transfer {balance}. From: {self.address} - To: {monitor.recipient_address} - User: {monitor.created_by} - Monitor: {monitor.name}")
                 if current_time + datetime.timedelta(seconds = 3) < datetime.datetime.now():
-                    await broadcaster(f"[WARNING] Too long request!")
-                    logging.warning("Too long request!")               
+                    await broadcaster(f"[WARNING] Too long request! User: {monitor.created_by} - Monitor: {monitor.name}")
+                    file_logger("Too long request!")               
          
             except ReadTimeoutError as e:
-                await broadcaster(f"[WARNING] Time out error {e}")
-                file_logger(f"[WARNING] Time out error {e}")
+                await broadcaster(f"[WARNING ReadTimeoutError] User: {monitor.created_by} - Monitor: {monitor.name} Time out error {e}")
+                file_logger(f"[WARNING ReadTimeoutError] User: {monitor.created_by} - Monitor: {monitor.name} Time out error {e}")
                 logging.warning(f"Time out error {e}")
 
             except Exception as e:
-                await broadcaster(f"[ERROR] Time out error \n{e.__str__()}")
-                file_logger(f"[ERROR] Time out error \n{e.__str__()}")
+                await broadcaster(f"[ERROR Exception] User: {monitor.created_by} - Monitor: {monitor.name} Exception error \n{e.__str__()}")
+                file_logger(f"[ERROR Exception] User: {monitor.created_by} - Monitor: {monitor.name} Exception error \n{e.__str__()}")
                 logging.warning(e)
 
-            await asyncio.sleep(threshold)
+            await asyncio.sleep(monitor.threshold)
             
+    
+    async def fetch_tron_transactions(self, address: str, limit: int = 10):
+            """
+            Asynchronously fetch all transactions for a given Tron wallet address.
+
+            :param address: The Tron wallet address (base58 format).
+            :param limit: Maximum number of transactions per page (default: 100).
+            :return: List of transactions.
+            """
+            base_url = "https://api.trongrid.io/v1/accounts/{}/transactions"
+            url = base_url.format(address)
+            headers = {"Accept": "application/json"}
+            all_transactions = []
+
+            # Pagination parameters
+            next_offset = None
+
+            while True:
+                params = {
+                    "limit": limit,
+                    "order_by": "timestamp,desc"  # Fetch the most recent transactions first
+                }
+                if next_offset:
+                    params["fingerprint"] = next_offset
+
+                try:
+                    async with aiohttp.ClientSession() as session:
+                        async with session.get(url, headers=headers, params=params) as response:
+                            if response.status != 200:
+                                print(f"Error fetching transactions: HTTP {response.status}")
+                                break
+
+                            data = await response.json()
+
+                            # Extract transactions from the response
+                            transactions = data.get("data", [])
+                            if not transactions:
+                                break  # No more transactions
+
+                            all_transactions.extend(transactions)
+
+                            # Check if there is a next page
+                            next_offset = data.get("meta", {}).get("fingerprint")
+                            if not next_offset:
+                                break  # No more pages
+
+                except Exception as e:
+                    print(f"Error fetching transactions: {e}")
+                    break
+
+            return len(all_transactions)
+                
 
 # class AsyncAccount:
     # def __init__(self, mnemonic_phrase: str):
