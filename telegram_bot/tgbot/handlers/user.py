@@ -60,7 +60,6 @@ async def manage_monitoring(query: CallbackQuery, state: FSMContext, redis_db: R
             await manager.stop_monitor(monitor, query.from_user.id)
             await redis_db.remove_monitor(query.from_user.id, monitor.name)
             await query.message.delete()
-            await MenuKeyboards.show_montorings(query.from_user.id, query)
         except:
             await query.answer(text = "Error", show_alert = True)
             

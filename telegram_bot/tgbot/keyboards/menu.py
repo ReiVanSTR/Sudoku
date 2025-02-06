@@ -128,12 +128,13 @@ class MenuKeyboards:
             current_transactions = await account.fetch_tron_transactions(account.address)
             
             message = f"""
-            Monitor: {monitor.name} | Address: {account.address[:8]}\n
-            TRX: {trx_balance} | USDt-TRC20: {usdt_trc20_balance}$\n
-            Brandwidth: {account_resources.get("freeNetLimit", 0) - account_resources.get("freeNetUsed", 0)} | Energy: {account_resources.get("EnergyLimit", 0) - account_resources.get("EnergyUsed", 0)}\n
-            Current transacions: {current_transactions}\n
+            Monitor: {monitor.name} | Address: {account.address[:8]}
+            TRX: {trx_balance} | USDt-TRC20: {usdt_trc20_balance}$
+            Brandwidth: {account_resources.get("freeNetLimit", 0) - account_resources.get("freeNetUsed", 0)} | Energy: {account_resources.get("EnergyLimit", 0) - account_resources.get("EnergyUsed", 0)}
+            Current transacions: {current_transactions}
             Is running: {monitor.is_running}
             """
+            
             keyboard.button(
                 text = f"{'Start' if not monitor.is_running else 'Stop'}",
                 callback_data = MenuNavigate(action = MenuActons.MANAGE_MONITOR, type = "start" if not monitor.is_running else "stop", id = monitor.name)
@@ -166,10 +167,10 @@ class MenuKeyboards:
         current_transactions = await account.fetch_tron_transactions(account.address)
         
         message = f"""
-        Monitor: {monitor.name} | Address: {account.address[:8]}\n
-        TRX: {trx_balance} | USDt-TRC20: {usdt_trc20_balance}$\n
+        Monitor: {monitor.name} | Address: {account.address[:8]}
+        TRX: {trx_balance} | USDt-TRC20: {usdt_trc20_balance}$
         Brandwidth: {account_resources.get("freeNetLimit", 0) - account_resources.get("freeNetUsed", 0)} | Energy: {account_resources.get("EnergyLimit", 0) - account_resources.get("EnergyUsed", 0)}\n
-        Current transacions: {current_transactions}\n
+        Current transacions: {current_transactions}
         Is running: {monitor.is_running}
         """
         keyboard.button(

@@ -59,7 +59,7 @@ async def send_message(
     except exceptions.TelegramAPIError:
         file_logger(f"Target [ID:{user_id}]: failed")
     else:
-        file_logger(f"Target [ID:{user_id}]: success")
+        file_logger(f"Target [ID:{user_id}]: Announce succesfull! {text}")
         return True
     return False
 
